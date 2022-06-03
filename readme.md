@@ -2,6 +2,10 @@
 
 Repository for CLIP-supervised GAN-based Image Editing.
 
+`cliplsd.py` contrains all training code for the project.
+
+The `notebooks` folder contains all experiment notebooks.
+
 ### Streamlit apps
 
 A streamlit app is provided to view the trained directions depending on the chosen parameters.
