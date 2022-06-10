@@ -619,8 +619,7 @@ class CLIPLSD:
                    self.localization_lambda * localization_loss + \
                    self.gamma_correlation * correlation_loss
 
-            # We have to use retain_grad=True here to avoid error
-            loss.backward(retain_graph=True)
+            loss.backward()
             if self.unit_norm:
                 optimizer.step()
                 self.latent_dirs.data = self.latent_dirs.data / torch.linalg.norm(self.latent_dirs.data, dim=1,
@@ -701,19 +700,18 @@ class CLIPLSD:
 
     def score(self, gan_sample_generator, clip_model, batch_data, alpha):
         
-        text_token = clip.tokenize(self.semantic_text).to(self.device)
-        text_features = clip_model.encode_text(text_token).float().to(self.device)
-        text_features = text_features / text_features.norm(dim=-1, keepdim=True)
-        text_features.detach()
-        
-        upsample = torch.nn.Upsample(scale_factor=7)
-        average_pool = torch.nn.AvgPool2d(kernel_size=1024 // 32)
-
-        new_batch = self.edit_batch_data(gan_sample_generator, batch_data, 0, alpha=alpha)
-
-        concat_images = torch.cat([batch_data['raw_image'], new_batch['raw_image']])
-
         with torch.no_grad():
+            text_token = clip.tokenize(self.semantic_text).to(self.device)
+            text_features = clip_model.encode_text(text_token).float().to(self.device)
+            text_features = text_features / text_features.norm(dim=-1, keepdim=True)
+            
+            upsample = torch.nn.Upsample(scale_factor=7)
+            average_pool = torch.nn.AvgPool2d(kernel_size=1024 // 32)
+
+            new_batch = self.edit_batch_data(gan_sample_generator, batch_data, 0, alpha=alpha)
+
+            concat_images = torch.cat([batch_data['raw_image'], new_batch['raw_image']])
+        
             image_input = average_pool(upsample(concat_images)).to(self.device)
             image_features = clip_model.encode_image(image_input).float()
             image_features_norm = image_features / image_features.norm(dim=-1, keepdim=True) # we did not normalize for first trained directions
